@@ -1,4 +1,4 @@
-% Created 2022-12-01 Thu 12:53
+% Created 2022-12-01 Thu 13:36
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -29,9 +29,9 @@
 
 
 \section{Refresh the IPs in the UFW by hostnames}
-\label{sec:orgdbe2b8e}
+\label{sec:org9d7e9ec}
 \subsection{Roswell Header stuff}
-\label{sec:org5baac55}
+\label{sec:org7df01fb}
 \begin{verbatim}
 #!/bin/sh
 #|-*- mode:lisp -*-|#
@@ -42,7 +42,7 @@ exec ros -Q -- $0 "$@"                  ; ; ; ; ; ; ; ; ; ;
 \end{verbatim}
 
 \subsection{Info Block}
-\label{sec:org779ba16}
+\label{sec:org000e1f6}
 \begin{verbatim}
 ;;;; UFW refresh
 ;;;  The purpose of this script is to check refresh which hosts are allowed to access a machine
@@ -55,7 +55,7 @@ exec ros -Q -- $0 "$@"                  ; ; ; ; ; ; ; ; ; ;
 \end{verbatim}
 
 \subsection{Roswell init stuff}
-\label{sec:orge205fee}
+\label{sec:org8254316}
 voodoo magic:
 
 \begin{verbatim}
@@ -70,7 +70,7 @@ voodoo magic:
 \end{verbatim}
 
 \subsection{Hostnames and ports}
-\label{sec:orgb0aca76}
+\label{sec:org532d34f}
 Lists of the hostnames and their ports to check:
 \begin{verbatim}
 (defparameter *hostname* "jumpserver")
@@ -78,7 +78,7 @@ Lists of the hostnames and their ports to check:
 \end{verbatim}
 
 \subsection{Get Current IPs}
-\label{sec:orga274716}
+\label{sec:org50200b9}
 Functions for getting the current IPs based off of hostname
 \texttt{get-current-ip} takes hostname and calls \texttt{GETENT AHOSTS} and parses the result to get its current ip
 
@@ -94,7 +94,7 @@ Functions for getting the current IPs based off of hostname
 \end{verbatim}
 
 \subsection{Get Old IPs}
-\label{sec:org7bb209a}
+\label{sec:org4b3c0d1}
 Functions for grabbing the IPs currently in UFW's rules
 \texttt{get-old-ip} calls \texttt{UFW STATUS} to get the IPs currently in the rules 
 \begin{verbatim}
@@ -105,7 +105,7 @@ Functions for grabbing the IPs currently in UFW's rules
 \end{verbatim}
 
 \subsection{Delete Old Rules}
-\label{sec:orgdacd34c}
+\label{sec:orgd222a84}
 Functions to delete old UFW rules
 \texttt{delete-old-rule} takes an IP and a Port and calls UFW with \texttt{UFW DLETE} to remove that rule based on the specific IP and Port
 
@@ -121,7 +121,7 @@ Functions to delete old UFW rules
 \end{verbatim}
 
 \subsection{Define New Rules}
-\label{sec:orgf1f679b}
+\label{sec:orga66b748}
 Functions used to define new UFW rules
 \texttt{add-new-rule} takes an IP and Port and calles \texttt{UFW INSERT} to insert a new rule allowing that IP on that Port
 
@@ -137,7 +137,7 @@ Functions used to define new UFW rules
 \end{verbatim}
 
 \subsection{Replace IPs}
-\label{sec:org0c2e722}
+\label{sec:orgb7097c6}
 Functions used to delete old UFW rules and define new ones
 \texttt{replace-ip} takes the old IP and new IP and calls the respective functions to delete and add new rules
 \textbf{TODO}: generalize \texttt{replace-ip}
@@ -158,7 +158,7 @@ Functions used to delete old UFW rules and define new ones
 \end{verbatim}
 
 \subsection{Main Function}
-\label{sec:org2e68c83}
+\label{sec:orgee89016}
 Main function to run program
 
 \begin{verbatim}
@@ -169,7 +169,7 @@ Main function to run program
 \end{verbatim}
 
 \subsection{Roswell Footer Info}
-\label{sec:org992dc2a}
+\label{sec:orgcd4ee00}
 \begin{verbatim}
 ;;; vim: set ft=lisp lisp:
 \end{verbatim}
