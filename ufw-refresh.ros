@@ -1,0 +1,69 @@
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"                  ; ; ; ; ; ; ; ; ; ;
+|#
+
+;;;; UFW refresh
+;;;  The purpose of this script is to check refresh which hosts are allowed to access a machine
+;;;  by checking their current IPs, using hostnames, and checking them against IPs currently allowed access
+;;;  in UFW.
+;;;  Script must be run as ROOT user
+
+;;; *TODO* modify to allow for arbitrary number of hosts
+    
+(progn ;;init forms
+  (ros:ensure-asdf)
+  #+quicklisp(ql:quickload '() :silent t)
+  )
+
+(defpackage :ros.script.ufw-refresh.3876675733
+  (:use :cl))
+(in-package :ros.script.ufw-refresh.3876675733)
+
+(defparameter *hostname* "jumpserver")
+(defparameter *port* "22")
+
+(defun get-current-ip (hostname)
+ "Get the current IP of a host using the hostname by calling GETENT"
+  (car (uiop:split-string (uiop:run-program (uiop:strcat "/usr/bin/getent ahosts " hostname) :output :string))))
+
+(defun get-jumpserver-ip ()
+ "Get the current IP of the JUMPSERVER"
+  (get-current-ip *hostname*))
+
+(defun get-old-ip ()
+ "Get the old IP of a host by taking the last element of a list of the output of UFW\'s status"
+  (cdr (uiop:split-string (uiop:run-program "/usr/sbin/ufw status"))))
+
+(defun delete-old-rule (ip port)
+ "Delete the old rule for an allowing an IP"
+  (uiop:run-program (uiop:strcat "/usr/sbin/ufw delete allow from " ip " to any port " port) :output :string))
+
+(defun delete-old-jumpserver ()
+ "Delete the old rule allowing JUMPSERVER access"
+  (delete-old-rule (get-jumpserver-ip) *port*))
+
+(defun add-new-rule (ip port)
+ "Add a new rule allowing current IP access"
+  (uiop:run-program (uiop:strcat"/usr/sbin/ufw insert 1 allow from " ip " to any port " port) :output :string))
+
+(defun add-new-jumpserver ()
+ "Add a new rule allowing JUMPSERVER\'s new IP access"
+  (add-new-rule (get-jumpserver-ip) *port*))
+
+(defun replace-ip (new-ip old-ip)
+ "Replace old IP by calling DELETE-OLD-JUMPSERVER and ADD-NEW-JUMPSERVER"
+  (cond ((string= new-ip old-ip)
+         (progn
+           (delete-old-jumpserver)
+           (add-new-jumpserver)))))
+
+(defun replace-jumpserver ()
+ "Replace JUMPSERVER\'s IP by calling REPLACE-IP with GET-OLD-IP and GET-JUMPSERVER-IP as arguments"
+  (replace-ip (get-old-ip) (get-jumpserver-ip)))
+
+(defun main (&rest argv)
+  (declare (ignorable argv))
+  (replace-jumpserver))
+;;; vim: set ft=lisp lisp:
