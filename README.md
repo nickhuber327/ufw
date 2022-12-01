@@ -35,7 +35,7 @@
 <a id="org2791387"></a>
 
 ## Info Block
-```
+``` lisp
     ;;;; UFW refresh
     ;;;  The purpose of this script is to check refresh which hosts are allowed to access a machine
     ;;;  by checking their current IPs, using hostnames, and checking them against IPs currently allowed access
