@@ -1,0 +1,176 @@
+% Created 2022-12-01 Thu 12:53
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\author{Nicholas Huber}
+\date{\today}
+\title{ufw-refresh.ros}
+\hypersetup{
+ pdfauthor={Nicholas Huber},
+ pdftitle={ufw-refresh.ros},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.6)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\section{Refresh the IPs in the UFW by hostnames}
+\label{sec:orgdbe2b8e}
+\subsection{Roswell Header stuff}
+\label{sec:org5baac55}
+\begin{verbatim}
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"                  ; ; ; ; ; ; ; ; ; ;
+|#
+
+\end{verbatim}
+
+\subsection{Info Block}
+\label{sec:org779ba16}
+\begin{verbatim}
+;;;; UFW refresh
+;;;  The purpose of this script is to check refresh which hosts are allowed to access a machine
+;;;  by checking their current IPs, using hostnames, and checking them against IPs currently allowed access
+;;;  in UFW.
+;;;  Script must be run as ROOT user
+
+;;; *TODO* modify to allow for arbitrary number of hosts
+;;; *TODO* remove host specific functions
+\end{verbatim}
+
+\subsection{Roswell init stuff}
+\label{sec:orge205fee}
+voodoo magic:
+
+\begin{verbatim}
+(progn ;;init forms
+  (ros:ensure-asdf)
+  #+quicklisp(ql:quickload '() :silent t)
+  )
+
+(defpackage :ros.script.ufw-refresh.3876675733
+  (:use :cl))
+(in-package :ros.script.ufw-refresh.3876675733)
+\end{verbatim}
+
+\subsection{Hostnames and ports}
+\label{sec:orgb0aca76}
+Lists of the hostnames and their ports to check:
+\begin{verbatim}
+(defparameter *hostname* "jumpserver")
+(defparameter *port* "22")
+\end{verbatim}
+
+\subsection{Get Current IPs}
+\label{sec:orga274716}
+Functions for getting the current IPs based off of hostname
+\texttt{get-current-ip} takes hostname and calls \texttt{GETENT AHOSTS} and parses the result to get its current ip
+
+\begin{verbatim}
+(defun get-current-ip (hostname)
+ "Get the current IP of a host using the hostname by calling GETENT"
+  (car (uiop:split-string (uiop:run-program (uiop:strcat "/usr/bin/getent ahosts " hostname) :output :string))))
+
+(defun get-jumpserver-ip ()
+ "Get the current IP of the JUMPSERVER"
+  (get-current-ip *hostname*))
+
+\end{verbatim}
+
+\subsection{Get Old IPs}
+\label{sec:org7bb209a}
+Functions for grabbing the IPs currently in UFW's rules
+\texttt{get-old-ip} calls \texttt{UFW STATUS} to get the IPs currently in the rules 
+\begin{verbatim}
+(defun get-old-ip ()
+ "Get the old IP of a host by taking the last element of a list of the output of UFW\'s status"
+  (cdr (uiop:split-string (uiop:run-program "/usr/sbin/ufw status"))))
+
+\end{verbatim}
+
+\subsection{Delete Old Rules}
+\label{sec:orgdacd34c}
+Functions to delete old UFW rules
+\texttt{delete-old-rule} takes an IP and a Port and calls UFW with \texttt{UFW DLETE} to remove that rule based on the specific IP and Port
+
+\begin{verbatim}
+(defun delete-old-rule (ip port)
+ "Delete the old rule for an allowing an IP"
+  (uiop:run-program (uiop:strcat "/usr/sbin/ufw delete allow from " ip " to any port " port) :output :string))
+
+(defun delete-old-jumpserver ()
+ "Delete the old rule allowing JUMPSERVER access"
+  (delete-old-rule (get-jumpserver-ip) *port*))
+
+\end{verbatim}
+
+\subsection{Define New Rules}
+\label{sec:orgf1f679b}
+Functions used to define new UFW rules
+\texttt{add-new-rule} takes an IP and Port and calles \texttt{UFW INSERT} to insert a new rule allowing that IP on that Port
+
+\begin{verbatim}
+(defun add-new-rule (ip port)
+ "Add a new rule allowing current IP access"
+  (uiop:run-program (uiop:strcat"/usr/sbin/ufw insert 1 allow from " ip " to any port " port) :output :string))
+
+(defun add-new-jumpserver ()
+ "Add a new rule allowing JUMPSERVER\'s new IP access"
+  (add-new-rule (get-jumpserver-ip) *port*))
+
+\end{verbatim}
+
+\subsection{Replace IPs}
+\label{sec:org0c2e722}
+Functions used to delete old UFW rules and define new ones
+\texttt{replace-ip} takes the old IP and new IP and calls the respective functions to delete and add new rules
+\textbf{TODO}: generalize \texttt{replace-ip}
+\textbf{TODO}: possbily replace rules regardless of whether or not they match?
+
+\begin{verbatim}
+(defun replace-ip (new-ip old-ip)
+ "Replace old IP by calling DELETE-OLD-JUMPSERVER and ADD-NEW-JUMPSERVER"
+  (cond ((string= new-ip old-ip)
+         (progn
+           (delete-old-jumpserver)
+           (add-new-jumpserver)))))
+
+(defun replace-jumpserver ()
+ "Replace JUMPSERVER\'s IP by calling REPLACE-IP with GET-OLD-IP and GET-JUMPSERVER-IP as arguments"
+  (replace-ip (get-old-ip) (get-jumpserver-ip)))
+
+\end{verbatim}
+
+\subsection{Main Function}
+\label{sec:org2e68c83}
+Main function to run program
+
+\begin{verbatim}
+(defun main (&rest argv)
+  (declare (ignorable argv))
+  (replace-jumpserver))
+
+\end{verbatim}
+
+\subsection{Roswell Footer Info}
+\label{sec:org992dc2a}
+\begin{verbatim}
+;;; vim: set ft=lisp lisp:
+\end{verbatim}
+\end{document}
