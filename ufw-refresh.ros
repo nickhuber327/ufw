@@ -48,8 +48,8 @@ exec ros -Q -- $0 "$@"                  ; ; ; ; ; ; ; ; ; ;
 
 (defun main (&rest hostname-port-list)
   (loop for hostname-port in hostname-port-list do
-        (replace-ip (get-current-ip (car (uiop:split-string hostname-port :separator ":"))
+        (replace-ip (get-current-ip (car (uiop:split-string hostname-port :separator ":")))
                                     (get-old-ip)
-                                    (cdr (uiop:split-string hostname-port :separator ":"))))
+                                    (cdr (uiop:split-string hostname-port :separator ":")))))
 
 ;;; vim: set ft=lisp lisp:
