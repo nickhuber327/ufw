@@ -10,5 +10,5 @@ A script for refreshing the IPs in your UFW rules based on the hostnames for dyn
 Run as:
 
 ``` shell
-ufw-refresh host:port host2:port2
+sudo ufw-refresh host:port host2:port2
 ```
