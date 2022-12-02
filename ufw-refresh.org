@@ -1,7 +1,7 @@
 #+TITLE: ufw-refresh.ros
 #+AUTHOR: Nicholas Huber
 #+STARTUP: showall
-#+PROPERTY: header-args:lisp :tangle /home/nick/Programming/CLisp/scripts/ufw/ufw-refresh.ros
+#+PROPERTY: header-args:lisp :tangle /home/nick/Programming/Clisp/scripts/ufw/ufw-refresh.ros
 
 * Refresh the IPs in the UFW by hostnames
 ** Roswell Header stuff
@@ -21,9 +21,7 @@
   ;;;  by checking their current IPs, using hostnames, and checking them against IPs currently allowed access
   ;;;  in UFW.
   ;;;  Script must be run as ROOT user
-
-  ;;; *TODO* modify to allow for arbitrary number of hosts
-  ;;; *TODO* remove host specific functions
+  ;;;  Enter list of hostnames and ports as HOST1:PORT HOST2:PORT2
 #+end_src
 
 ** Roswell init stuff
@@ -91,7 +89,6 @@ Functions used to define new UFW rules
 ** Replace IPs
 Functions used to delete old UFW rules and define new ones
 ~replace-ip~ takes the old IP and new IP and calls the respective functions to delete and add new rules
-*TODO*: generalize ~replace-ip~
 *TODO*: possbily replace rules regardless of whether or not they match?
 
 #+begin_src lisp
@@ -105,12 +102,13 @@ Functions used to delete old UFW rules and define new ones
 
 ** Main Function
 Main function to run program
-*TODO* Loop over ~ips-and-ports~ in pattern of ~ip~, ~port~, ~ip~, ~port~, etc
 
 #+begin_src lisp
-  (defun main (ips-andports &rest argv)
-    (declare (ignorable argv))
-    (replace-ip (get-current-ip *hostname*) (get-old-ip) *port*))
+  (defun main (&rest hostname-port-list)
+    (loop for hostname-port in hostname-port-list do
+          (replace-ip (get-current-ip (car (uiop:split-string hostname-port :separator ":"))
+                                      (get-old-ip)
+                                      (cdr (uiop:split-string hostname-port :separator ":"))))
 #+end_src
 
 ** Roswell Footer Info
