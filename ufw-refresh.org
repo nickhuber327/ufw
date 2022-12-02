@@ -1,6 +1,6 @@
 #+TITLE: ufw-refresh.ros
 #+AUTHOR: Nicholas Huber
-#+STARTUP: overview
+#+STARTUP: showall
 #+PROPERTY: header-args:lisp :tangle /home/nick/Programming/CLisp/scripts/ufw/ufw-refresh.ros
 
 * Refresh the IPs in the UFW by hostnames
@@ -42,6 +42,7 @@ voodoo magic:
 
 ** Hostnames and ports
 Lists of the hostnames and their ports to check:
+
 #+begin_src lisp
   (defparameter *hostname* "jumpserver")
   (defparameter *port* "22")
@@ -55,21 +56,16 @@ Functions for getting the current IPs based off of hostname
   (defun get-current-ip (hostname)
    "Get the current IP of a host using the hostname by calling GETENT"
     (car (uiop:split-string (uiop:run-program (uiop:strcat "/usr/bin/getent ahosts " hostname) :output :string))))
-
-  (defun get-jumpserver-ip ()
-   "Get the current IP of the JUMPSERVER"
-    (get-current-ip *hostname*))
-
 #+end_src
 
 ** Get Old IPs
 Functions for grabbing the IPs currently in UFW's rules
 ~get-old-ip~ calls ~UFW STATUS~ to get the IPs currently in the rules 
+
 #+begin_src lisp
   (defun get-old-ip ()
    "Get the old IP of a host by taking the last element of a list of the output of UFW\'s status"
     (cdr (uiop:split-string (uiop:run-program "/usr/sbin/ufw status"))))
-
 #+end_src
 
 ** Delete Old Rules
@@ -80,11 +76,6 @@ Functions to delete old UFW rules
   (defun delete-old-rule (ip port)
    "Delete the old rule for an allowing an IP"
     (uiop:run-program (uiop:strcat "/usr/sbin/ufw delete allow from " ip " to any port " port) :output :string))
-
-  (defun delete-old-jumpserver ()
-   "Delete the old rule allowing JUMPSERVER access"
-    (delete-old-rule (get-jumpserver-ip) *port*))
-
 #+end_src
 
 ** Define New Rules
@@ -95,11 +86,6 @@ Functions used to define new UFW rules
   (defun add-new-rule (ip port)
    "Add a new rule allowing current IP access"
     (uiop:run-program (uiop:strcat"/usr/sbin/ufw insert 1 allow from " ip " to any port " port) :output :string))
-
-  (defun add-new-jumpserver ()
-   "Add a new rule allowing JUMPSERVER\'s new IP access"
-    (add-new-rule (get-jumpserver-ip) *port*))
-
 #+end_src
 
 ** Replace IPs
@@ -109,27 +95,22 @@ Functions used to delete old UFW rules and define new ones
 *TODO*: possbily replace rules regardless of whether or not they match?
 
 #+begin_src lisp
-  (defun replace-ip (new-ip old-ip)
+  (defun replace-ip (new-ip old-ip port)
    "Replace old IP by calling DELETE-OLD-JUMPSERVER and ADD-NEW-JUMPSERVER"
     (cond ((string= new-ip old-ip)
            (progn
-             (delete-old-jumpserver)
-             (add-new-jumpserver)))))
-
-  (defun replace-jumpserver ()
-   "Replace JUMPSERVER\'s IP by calling REPLACE-IP with GET-OLD-IP and GET-JUMPSERVER-IP as arguments"
-    (replace-ip (get-old-ip) (get-jumpserver-ip)))
-
+             (delete-old-rule old-ip port)
+             (add-new-rule new-ip port)))))
 #+end_src
 
 ** Main Function
 Main function to run program
+*TODO* Loop over ~ips-and-ports~ in pattern of ~ip~, ~port~, ~ip~, ~port~, etc
 
 #+begin_src lisp
-  (defun main (&rest argv)
+  (defun main (ips-andports &rest argv)
     (declare (ignorable argv))
-    (replace-jumpserver))
-
+    (replace-ip (get-current-ip *hostname*) (get-old-ip) *port*))
 #+end_src
 
 ** Roswell Footer Info
