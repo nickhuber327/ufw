@@ -38,12 +38,12 @@ voodoo magic:
 (in-package :ros.script.ufw-refresh.3876675733)
 #+end_src
 
-** Hostnames and ports
+** +Hostnames and ports+
 Lists of the hostnames and their ports to check:
 
-#+begin_src lisp
-  (defparameter *hostname* "jumpserver")
-  (defparameter *port* "22")
+#+begin_src lisp :tangle nil
+  ;(defparameter *hostname* "jumpserver")
+  ;(defparameter *port* "22")
 #+end_src
 
 ** Get Current IPs
@@ -58,8 +58,20 @@ Functions for getting the current IPs based off of hostname
 
 ** Get Old IPs
 Functions for grabbing the IPs currently in UFW's rules
-~get-old-ip~ calls ~UFW STATUS~ to get the IPs currently in the rules 
-
+~get-old-ip~ calls ~UFW STATUS~ to get the IPs currently in the rules
+*** *TODO* filter out the IP addresses
+     +1) Try for regex, ~^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$~, simple regex for IPs+
+     1) Split results of ~ufw status~ with ~str:lines~ (load from ~cl-str~)
+     2) To filer out header stuff and last blank-line:
+        ~(butlast (cddddr stuff))~
+    +3) *TODO* filer out whitespace+
+     3) *TODO* filter out empty +sublists+ strings in list
+        progress:
+        ~(remove-if #'(lambda (c) (not (find #\space c :test-not #'eql))) (uiop:split-string (car contents) :separator " "))~
+     4) Grab the last element of each sublist after filtering out all the extra whitespace elements
+        ~(last (remove-if #'(lambda (c) (not (find #\space c :test-not #'eql))) (uiop:split-string (car contents) :separator " "))~
+     5) *TODO* Loop over each sublist, probably from main function (return list of IPs)
+        
 #+begin_src lisp
   (defun get-old-ip ()
    "Get the old IP of a host by taking the last element of a list of the output of UFW\'s status"
@@ -102,13 +114,16 @@ Functions used to delete old UFW rules and define new ones
 
 ** Main Function
 Main function to run program
-
+*TODO* Modify loop to loop over both new and old IPs
+     1) Remove ~get-old-ip~ call from ~replace-ip~ function call
+     2) Place call to ~get-old-ip~ in ~loop~ to iterate over list of current and old IPs
+        *TODO* ^^^ figure out how to do aforementioned
 #+begin_src lisp
   (defun main (&rest hostname-port-list)
     (loop for hostname-port in hostname-port-list do
-          (replace-ip (get-current-ip (car (uiop:split-string hostname-port :separator ":"))
-                                      (get-old-ip)
-                                      (cdr (uiop:split-string hostname-port :separator ":"))))
+          (replace-ip (get-current-ip (car (uiop:split-string hostname-port :separator ":")))
+                      (get-old-ip)
+                      (cdr (uiop:split-string hostname-port :separator ":")))))
 #+end_src
 
 ** Roswell Footer Info
